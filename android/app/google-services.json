@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "933167332869",
+    "project_id": "satubeacukai-fd692",
+    "storage_bucket": "satubeacukai-fd692.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:933167332869:android:e465b3bddaad70098ae66c",
+        "android_client_info": {
+          "package_name": "com.example.satubeacukai"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA6HGVl_7_qYzVfVhUlpOSMzQKiWlQoqw4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
