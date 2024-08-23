@@ -10,8 +10,8 @@ class LandingPage extends StatefulWidget {
 
 class _LandingPageState extends State<LandingPage>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _animation;
+  late final AnimationController _controller;
+  late final Animation<double> _animation;
 
   @override
   void initState() {
@@ -37,7 +37,7 @@ class _LandingPageState extends State<LandingPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: null, // Menghilangkan tulisan pada AppBar
+        title: const SizedBox.shrink(), // Menghilangkan tulisan pada AppBar
       ),
       body: Center(
         child: AnimatedBuilder(
@@ -55,23 +55,23 @@ class _LandingPageState extends State<LandingPage>
                         padding: const EdgeInsets.all(8.0),
                         child: Image.asset(
                           'assets/bea_cukai.png',
-                          width: 90, // Ubah ukuran logo menjadi lebih kecil
-                          height: 90, // Ubah ukuran logo menjadi lebih kecil
+                          width: 90,
+                          height: 90,
                         ),
                       ),
-                      const SizedBox(width: 20), // Atur jarak antara logo menggunakan SizedBox
+                      const SizedBox(width: 20),
                       Container(
-                        width: 3, // Lebar pembatas
-                        height: 40, // Tinggi pembatas sesuai dengan tinggi logo
-                        color: Colors.black, // Warna pembatas
+                        width: 3,
+                        height: 40,
+                        color: Colors.black,
                       ),
-                      const SizedBox(width: 20), // Atur jarak antara logo menggunakan SizedBox
+                      const SizedBox(width: 20),
                       Padding(
                         padding: const EdgeInsets.all(8.0),
                         child: Image.asset(
                           'assets/kemenkeu.png',
-                          width: 90, // Ubah ukuran logo menjadi lebih kecil
-                          height: 90, // Ubah ukuran logo menjadi lebih kecil
+                          width: 90,
+                          height: 90,
                         ),
                       ),
                     ],
@@ -82,11 +82,11 @@ class _LandingPageState extends State<LandingPage>
                       // Navigasi ke halaman login saat tombol floating ditekan
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (context) => LoginPage()),
+                        MaterialPageRoute(builder: (context) => const LoginPage()),
                       );
                     },
-                    backgroundColor: Colors.blue, // Warna latar belakang tombol floating
-                    child: const Icon(Icons.arrow_forward), // Icon untuk tombol floating
+                    backgroundColor: Colors.blue,
+                    child: const Icon(Icons.arrow_forward),
                   ),
                 ],
               ),
