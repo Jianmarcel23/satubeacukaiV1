@@ -5,8 +5,10 @@ import 'package:flutter_calendar_carousel/classes/event.dart';
 import 'package:intl/intl.dart';
 import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // Import FirebaseAuth
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:satubeacukai/login_page.dart';
+import 'package:qr_code_scanner/qr_code_scanner.dart';
+import 'package:satubeacukai/attendance_history_page.dart';
 
 class EventModel implements EventInterface {
   final String title;
@@ -49,7 +51,7 @@ class _MainScreenState extends State<MainScreen>
     with SingleTickerProviderStateMixin {
   late String _currentTime;
   bool _isCheckedIn = false;
-  late final EventList<EventModel> _markedDates;
+  late EventList<EventModel> _markedDates;
   Future<Map<String, dynamic>?>? _profileFuture;
   late AnimationController _animationController;
   late Animation<double> _animation;
@@ -92,11 +94,12 @@ class _MainScreenState extends State<MainScreen>
 
   EventList<EventModel> _buildMarkedDateMap() {
     final events = [
-      EventModel(title: 'Meeting', date: DateTime(2022, 2, 28)),
-      EventModel(title: 'Birthday Party', date: DateTime(2022, 3, 15)),
+      EventModel(title: 'Meeting', date: DateTime(2024, 8, 28)),
+      EventModel(title: 'Birthday Party', date: DateTime(2024, 8, 29)),
     ];
 
     final markedDateMap = EventList<EventModel>(events: {});
+
     for (var event in events) {
       markedDateMap.add(event.date, event);
     }
@@ -308,16 +311,7 @@ class _MainScreenState extends State<MainScreen>
   Widget _buildCheckInOutButton() {
     return ElevatedButton(
       onPressed: _checkInOrOut,
-      child: Text(_isCheckedIn ? 'Check Out' : 'Check In'),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: _isCheckedIn
-            ? Colors.red
-            : Colors.green, // Adjust the button color based on state
-        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(15),
-        ),
-      ),
+      child: Text(_isCheckedIn ? 'Check-Out' : 'Check-In'),
     );
   }
 
@@ -330,42 +324,32 @@ class _MainScreenState extends State<MainScreen>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildTimeInfoRow('Jam Masuk', _jamMasuk),
-            _buildTimeInfoRow('Jam Istirahat', _jamIstirahat),
-            _buildTimeInfoRow('Jam Pulang', _jamPulang),
+            Text('Jam Masuk: ${_jamMasuk ?? '-'}'),
+            Text('Jam Istirahat: ${_jamIstirahat ?? '-'}'),
+            Text('Jam Pulang: ${_jamPulang ?? '-'}'),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTimeInfoRow(String label, String? value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Row(
-        children: [
-          Text(
-            '$label: ',
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-          Text(
-            value ?? '-',
-            style: const TextStyle(fontSize: 18),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildCalendar() {
-    return CalendarCarousel<EventModel>(
-      weekendTextStyle: const TextStyle(
-        color: Colors.red,
+    return SizedBox(
+      height: 400, // set a fixed height for the calendar
+      child: CalendarCarousel<EventModel>(
+        onDayPressed: (DateTime date, List<EventModel> events) {
+          print(date);
+        },
+        daysHaveCircularBorder: true,
+        showOnlyCurrentMonthDate: false,
+        todayBorderColor: Colors.transparent,
+        todayButtonColor: Colors.transparent,
+        selectedDayBorderColor: Colors.transparent,
+        selectedDayButtonColor: Colors.blue,
+        selectedDayTextStyle: const TextStyle(color: Colors.white),
+        headerTextStyle: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+        markedDatesMap: _markedDates,
       ),
-      markedDatesMap: _markedDates,
-      height: 400.0,
-      selectedDateTime: DateTime.now(),
-      daysHaveCircularBorder: false,
     );
   }
 
@@ -404,6 +388,18 @@ class _MainScreenState extends State<MainScreen>
             },
           ),
           ListTile(
+            leading: const Icon(Icons.qr_code_scanner),
+            title: const Text('Scan QR Code'),
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => QRScanPage(currentUserId: widget.currentUserId),
+                ),
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.exit_to_app),
             title: const Text('Keluar'),
             onTap: () {
@@ -422,51 +418,101 @@ class _MainScreenState extends State<MainScreen>
   }
 }
 
-class AttendanceHistoryPage extends StatelessWidget {
-  final String userId;
+class QRScanPage extends StatefulWidget {
+  final String currentUserId;
 
-  const AttendanceHistoryPage({super.key, required this.userId});
+  const QRScanPage({super.key, required this.currentUserId});
+
+  @override
+  _QRScanPageState createState() => _QRScanPageState();
+}
+
+class _QRScanPageState extends State<QRScanPage> {
+  final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
+  QRViewController? controller;
+
+  @override
+  void dispose() {
+    controller?.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Riwayat Absensi'),
+      appBar: AppBar(title: const Text('Scan QR Code')),
+      body: QRView(
+        key: qrKey,
+        onQRViewCreated: _onQRViewCreated,
+        overlay: QrScannerOverlayShape(
+          borderColor: Colors.green,
+          borderRadius: 10,
+          borderLength: 30,
+          borderWidth: 10,
+          cutOutSize: MediaQuery.of(context).size.width * 0.8,
+        ),
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
+    );
+  }
+
+  void _onQRViewCreated(QRViewController controller) {
+    this.controller = controller;
+    controller.scannedDataStream.listen((scanData) async {
+      final nip = scanData.code;
+      if (nip != null) {
+        Navigator.pop(context); // Close the QR scanner page
+        await _handleScannedNIP(nip);
+      }
+    });
+  }
+
+  Future<void> _handleScannedNIP(String nip) async {
+    final now = DateTime.now();
+    final formattedTime = DateFormat('HH:mm:ss').format(now);
+    final date = DateFormat('yyyy-MM-dd').format(now);
+
+    try {
+      final userQuery = await FirebaseFirestore.instance
+          .collection('employees')
+          .where('NIP', isEqualTo: nip)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        final userId = userQuery.docs.first.id;
+
+        final attendanceRef = FirebaseFirestore.instance
             .collection('attendance')
             .doc(userId)
             .collection('records')
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+            .doc(date);
+
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final docSnapshot = await transaction.get(attendanceRef);
+
+          if (!docSnapshot.exists) {
+            transaction.set(attendanceRef, {
+              'date': date,
+              'checkIn': formattedTime,
+            });
+          } else {
+            transaction.update(attendanceRef, {
+              'checkOut': formattedTime,
+            });
           }
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text('Tidak ada data absensi.'));
-          }
-          final records = snapshot.data!.docs;
-          return ListView.builder(
-            itemCount: records.length,
-            itemBuilder: (context, index) {
-              final record =
-                  records[index].data() as Map<String, dynamic>? ?? {};
-              return ListTile(
-                title: Text('Tanggal: ${records[index].id}'),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('Jam Masuk: ${record['checkIn'] ?? "-"}'),
-                    Text('Jam Istirahat: ${record['break'] ?? "-"}'),
-                    Text('Jam Pulang: ${record['checkOut'] ?? "-"}'),
-                  ],
-                ),
-              );
-            },
-          );
-        },
-      ),
-    );
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Absensi berhasil disimpan.')),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Pengguna dengan NIP tersebut tidak ditemukan.')),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving attendance: $e')),
+      );
+    }
   }
 }
